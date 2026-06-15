@@ -97,16 +97,8 @@ class FileOrganizerApp(MDApp):
         # Initialize the Category cards with 0 files
         self.update_stats_ui({})
         
-        # Propose default directory
-        if platform == 'android':
-            downloads_path = "/storage/emulated/0/Download"
-            self.target_dir = downloads_path
-            # We don't call on_dir_text_change yet as permissions aren't granted
-        else:
-            downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
-            if os.path.exists(downloads_path):
-                self.target_dir = downloads_path
-                self.on_dir_text_change(downloads_path)
+        # Keep directory empty on startup as requested
+        self.target_dir = ""
             
         # Transition from welcome screen to main screen after 2.5 seconds
         Clock.schedule_once(self.transition_to_main, 2.5)
@@ -135,9 +127,6 @@ class FileOrganizerApp(MDApp):
             # If manager check is available and not granted, prompt the user
             if hasattr(Environment, 'isExternalStorageManager') and not Environment.isExternalStorageManager():
                 self.prompt_manage_storage_permission()
-            else:
-                # If permissions are already granted, run validation on default directory
-                self.on_dir_text_change(self.target_dir)
         except Exception as e:
             print(f"Error checking permissions: {e}")
 
@@ -154,9 +143,6 @@ class FileOrganizerApp(MDApp):
                 uri = Uri.fromParts("package", activity.getPackageName(), None)
                 intent.setData(uri)
                 activity.startActivity(intent)
-                
-                # Check target dir status after user returns from settings screen
-                Clock.schedule_once(lambda dt: self.on_dir_text_change(self.target_dir), 3.0)
             except Exception as e:
                 show_alert_dialog("Permission Error", f"Could not open settings: {e}")
                 
@@ -164,18 +150,27 @@ class FileOrganizerApp(MDApp):
             title="Storage Permission Required",
             text=(
                 "Smart FileFlow needs 'All Files Access' permission to scan and organize "
-                "your Downloads folder on Android 11+.\n\n"
+                "your files in any folder you choose on your device storage.\n\n"
                 "Click CONFIRM to open system settings and enable it."
             ),
             on_confirm=open_settings
         )
 
     def open_folder_picker(self):
-        self.folder_picker.show(self.target_dir)
+        if platform == 'android':
+            start_path = "/storage/emulated/0"
+        else:
+            start_path = os.path.expanduser("~")
+            
+        if self.target_dir and os.path.exists(self.target_dir):
+            start_path = self.target_dir
+            
+        self.folder_picker.show(start_path)
 
     def on_folder_selected(self, path):
         self.target_dir = path
         self.on_dir_text_change(path)
+
 
     def on_dir_text_change(self, text):
         # Safety Guard: Skip UI updates if self.root is not yet fully loaded
@@ -354,4 +349,28 @@ class FileOrganizerApp(MDApp):
         )
 
 if __name__ == '__main__':
-    FileOrganizerApp().run()
+    try:
+        FileOrganizerApp().run()
+    except Exception as e:
+        import traceback
+        tb_str = traceback.format_exc()
+        print("CRITICAL LAUNCH ERROR:\n", tb_str)
+        
+        # Save traceback to private internal storage
+        try:
+            private_path = os.path.join(os.path.expanduser("~"), "fileflow_crash.log")
+            with open(private_path, "w", encoding="utf-8") as f:
+                f.write(tb_str)
+        except Exception:
+            pass
+            
+        # Save traceback to public downloads directory (if permissions exist)
+        try:
+            public_path = "/storage/emulated/0/Download/fileflow_crash.log"
+            with open(public_path, "w", encoding="utf-8") as f:
+                f.write(tb_str)
+        except Exception:
+            pass
+            
+        raise e
+

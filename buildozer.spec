@@ -20,7 +20,8 @@ version = 1.0.0
 
 # (list) Application requirements
 # comma separated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy==2.3.1,kivymd==1.2.0,pillow,requests,urllib3,certifi,charset_normalizer,idna
+requirements = python3,kivy==2.3.1,kivymd==1.2.0,pillow,requests,urllib3,certifi,charset_normalizer,idna,pyjnius,android
+
 
 # (str) Supported orientation (one of landscape, sensorLandscape, portrait or all)
 orientation = portrait
@@ -33,7 +34,8 @@ fullscreen = 1
 # =============================================================================
 
 # (list) Permissions
-android.permissions = READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE, MANAGE_EXTERNAL_STORAGE
+android.permissions = READ_EXTERNAL_STORAGE,WRITE_EXTERNAL_STORAGE,MANAGE_EXTERNAL_STORAGE
+
 
 # (int) Target Android API, should be as high as possible.
 android.api = 34
