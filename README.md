@@ -1,4 +1,4 @@
-# Smart FileFlow (v1.1)
+# Smart FileFlow (v1.0.1)
 
 Smart FileFlow is a premium, responsive cross-platform file organizer utility built using Python, Kivy, and KivyMD. Designed with a custom modern **Sleek Dark Mode** interface, it allows users to scan directories, view live dry-run previews of proposed moves, categorize files by their extensions, and organize them into standard folders with full **Undo** transaction support.
 
@@ -6,7 +6,7 @@ The application is fully optimized to run on both **Desktop** (Windows, macOS, L
 
 ---
 
-## ✨ Features
+## Features
 
 - **Obsidian Dark Theme**: A visually striking UI styled in deep charcoal (`#121620`) with neon cyan and gradient accents.
 - **Dynamic File Scanning**: Automatically groups files into categories: `Images`, `Videos`, `Documents`, `Audio`, `Archives`, `Installers`, and `Others`.
@@ -18,9 +18,15 @@ The application is fully optimized to run on both **Desktop** (Windows, macOS, L
 - **Lazy Dialog Initializer**: Deferral of complex UI widget constructions until requested, protecting the app from launch-time OpenGL context crashes on Android.
 - **Automated Tests**: Unit test suite verifying scanner classification, renaming, dry-run mapping, and undo systems.
 
+## Screens
+
+<img width="200" height="400" alt="Screenshot_20260616-002453" src="https://github.com/user-attachments/assets/0da71588-3a44-4bcb-ab55-eb99ac27d317" />
+<img width="200" height="400" alt="Screenshot_20260616-002507" src="https://github.com/user-attachments/assets/c5963dcd-a106-4fbb-ae88-87083c6a4221" />
+<img width="200" height="400" alt="Screenshot_20260616-004531" src="https://github.com/user-attachments/assets/1581cc58-8107-4be9-91de-a6712d2b33ee" />
+
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 File Organizer/
@@ -48,7 +54,7 @@ File Organizer/
 
 ---
 
-## 🖥️ Desktop Setup & Running
+## Desktop Setup & Running
 
 ### Prerequisites
 * Python 3.10 to 3.11 installed.
@@ -92,7 +98,7 @@ File Organizer/
 
 ---
 
-## 📱 Android Compilation & Installation
+## Android Compilation & Installation
 
 The application uses **Buildozer** and **python-for-android** to package Kivy into a native Android APK.
 
