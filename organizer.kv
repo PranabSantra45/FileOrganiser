@@ -1,66 +1,91 @@
 #:import CategoryCard ui.dashboard.CategoryCard
 #:import FilePreviewItem ui.dashboard.FilePreviewItem
 
+# Re-design Category Card with Left Border strip and Dark Glassmorphism background
 <CategoryCard>:
-    orientation: "vertical"
-    padding: "12dp"
-    spacing: "8dp"
+    orientation: "horizontal"
+    padding: ["18dp", "10dp", "10dp", "10dp"]
+    spacing: "10dp"
     size_hint_y: None
-    height: "110dp"
-    md_bg_color: self.bg_color
+    height: "76dp"
     radius: [12, 12, 12, 12]
-    elevation: 1.5
+    elevation: 1
+    md_bg_color: [0.11, 0.14, 0.22, 1]
+    
+    canvas.before:
+        # Subtle card boundary border
+        Color:
+            rgba: [0.18, 0.22, 0.33, 0.6]
+        RoundedRectangle:
+            pos: self.pos
+            size: self.size
+            radius: [12, 12, 12, 12]
+        # Dark fill background
+        Color:
+            rgba: [0.11, 0.14, 0.22, 1]
+        RoundedRectangle:
+            pos: [self.pos[0] + 1, self.pos[1] + 1]
+            size: [self.size[0] - 2, self.size[1] - 2]
+            radius: [12, 12, 12, 12]
+        # Left-edge vertical neon accent strip
+        Color:
+            rgba: root.bg_color
+        RoundedRectangle:
+            pos: self.pos
+            size: [dp(5), self.size[1]]
+            radius: [12, 0, 0, 12]
+
+    MDIcon:
+        icon: root.icon_name
+        font_size: "26sp"
+        theme_text_color: "Custom"
+        text_color: root.bg_color
+        size_hint_x: None
+        width: "30dp"
+        pos_hint: {"center_y": 0.5}
 
     BoxLayout:
-        orientation: "horizontal"
-        size_hint_y: None
-        height: "36dp"
-        
-        MDIcon:
-            icon: root.icon_name
-            font_size: "32sp"
+        orientation: "vertical"
+        pos_hint: {"center_y": 0.5}
+        spacing: "2dp"
+
+        MDLabel:
+            text: root.category_name
+            font_style: "Subtitle1"
             theme_text_color: "Custom"
-            text_color: [1, 1, 1, 0.9]
-            size_hint_x: None
-            width: "36dp"
-            halign: "left"
-            
-        Widget: # spacer
+            text_color: [1, 1, 1, 0.95]
+            bold: True
+            size_hint_y: None
+            height: "18dp"
 
-    MDLabel:
-        text: root.category_name
-        font_style: "Subtitle1"
-        theme_text_color: "Custom"
-        text_color: [1, 1, 1, 0.9]
-        bold: True
-        size_hint_y: None
-        height: "20dp"
+        MDLabel:
+            text: str(root.file_count) + " files"
+            font_style: "Caption"
+            theme_text_color: "Custom"
+            text_color: [1, 1, 1, 0.55]
+            size_hint_y: None
+            height: "14dp"
 
-    MDLabel:
-        text: str(root.file_count) + " files"
-        font_style: "Caption"
-        theme_text_color: "Custom"
-        text_color: [1, 1, 1, 0.75]
-        size_hint_y: None
-        height: "16dp"
-
+# Re-design File Preview List Row
 <FilePreviewItem>:
     orientation: "horizontal"
-    padding: ["12dp", "8dp", "12dp", "8dp"]
+    padding: ["16dp", "8dp", "16dp", "8dp"]
     size_hint_y: None
-    height: "64dp"
+    height: "60dp"
     spacing: "12dp"
     canvas.before:
+        # Alternating background colors for rows
         Color:
-            rgba: [0.95, 0.95, 0.95, 1] if self.index % 2 == 0 else [1, 1, 1, 1]
+            rgba: [0.08, 0.1, 0.16, 1] if self.index % 2 == 0 else [0.11, 0.14, 0.22, 1]
         Rectangle:
             pos: self.pos
             size: self.size
 
     MDIcon:
-        icon: "file-swap-outline"
+        icon: root.icon_name
         font_size: "24sp"
-        theme_text_color: "Secondary"
+        theme_text_color: "Custom"
+        text_color: [0, 0.74, 0.83, 1]  # Neon Cyan
         size_hint_x: None
         width: "24dp"
         pos_hint: {"center_y": 0.5}
@@ -68,164 +93,387 @@
     BoxLayout:
         orientation: "vertical"
         pos_hint: {"center_y": 0.5}
+        spacing: "1dp"
         
         MDLabel:
             text: root.filename
             font_style: "Body1"
             bold: True
-            theme_text_color: "Primary"
+            theme_text_color: "Custom"
+            text_color: [1, 1, 1, 0.9]
             shorten: True
             shorten_from: "right"
+            size_hint_y: None
+            height: "18dp"
             
         MDLabel:
-            text: "→ " + root.target_path
+            text: "➔ " + root.target_path
             font_style: "Caption"
-            theme_text_color: "Secondary"
+            theme_text_color: "Custom"
+            text_color: [0, 0.74, 0.83, 0.7]
             shorten: True
             shorten_from: "center"
+            size_hint_y: None
+            height: "14dp"
 
-# Main Screen Layout
-MDScreen:
-    BoxLayout:
-        orientation: "vertical"
-        
-        MDTopAppBar:
-            title: "Smart File Organizer"
-            anchor_title: "left"
-            elevation: 2
-            right_action_items: [["help-circle-outline", lambda x: app.show_help()]]
-            
+# Screen Manager controlling Welcome and Main Dashboard views
+ScreenManager:
+    id: screen_manager
+
+    # 1. Welcome Splash transition Screen
+    MDScreen:
+        name: "welcome_screen"
+        md_bg_color: [0.06, 0.08, 0.13, 1] # Dark obsidian background
+
         BoxLayout:
             orientation: "vertical"
-            padding: "16dp"
-            spacing: "16dp"
-            
-            # Directory Picker Row
-            BoxLayout:
-                orientation: "horizontal"
+            padding: "24dp"
+            spacing: "20dp"
+            pos_hint: {"center_x": 0.5, "center_y": 0.5}
+            size_hint: [None, None]
+            size: ["300dp", "340dp"]
+
+            # Large glowing file organizer icon
+            MDIcon:
+                icon: "folder-sync-outline"
+                font_size: "86sp"
+                theme_text_color: "Custom"
+                text_color: [0, 0.74, 0.83, 1] # Glowing Cyan
+                halign: "center"
                 size_hint_y: None
-                height: "64dp"
+                height: "96dp"
+
+            BoxLayout:
+                orientation: "vertical"
                 spacing: "8dp"
-                
-                MDTextField:
-                    id: dir_input
-                    hint_text: "Select folder to organize"
-                    text: app.target_dir
-                    on_text: app.on_dir_text_change(self.text)
-                    helper_text_mode: "on_error"
-                    pos_hint: {"center_y": 0.5}
+                size_hint_y: None
+                height: "110dp"
+
+                MDLabel:
+                    text: "Smart FileFlow"
+                    font_style: "H4"
+                    bold: True
+                    halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: [1, 1, 1, 1]
+                    size_hint_y: None
+                    height: "36dp"
+
+                MDLabel:
+                    text: "Welcome to FileFlow"
+                    font_style: "Subtitle1"
+                    halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: [0, 0.74, 0.83, 0.85]
+                    size_hint_y: None
+                    height: "24dp"
+
+                MDLabel:
+                    text: "Organizing your files seamlessly..."
+                    font_style: "Caption"
+                    halign: "center"
+                    theme_text_color: "Custom"
+                    text_color: [1, 1, 1, 0.45]
+                    size_hint_y: None
+                    height: "16dp"
+
+            # Spinner/Loader indicator
+            MDSpinner:
+                size_hint: [None, None]
+                size: ["28dp", "28dp"]
+                pos_hint: {"center_x": 0.5}
+                active: True
+                line_width: "2.5dp"
+                palette: [[0, 0.74, 0.83, 1]]
+
+    # 2. Main Organizer Dashboard Screen
+    MDScreen:
+        name: "main_screen"
+        md_bg_color: [0.06, 0.08, 0.13, 1]
+
+        BoxLayout:
+            orientation: "vertical"
+            
+            # Premium Custom Header with cyan neon divider
+            BoxLayout:
+                orientation: "vertical"
+                size_hint_y: None
+                height: "68dp"
+                padding: ["16dp", "10dp", "16dp", "10dp"]
+                canvas.before:
+                    Color:
+                        rgba: [0.08, 0.1, 0.16, 1]
+                    Rectangle:
+                        pos: self.pos
+                        size: self.size
+                    Color:
+                        rgba: [0, 0.74, 0.83, 0.6]  # Cyan bottom border line
+                    Line:
+                        points: [self.pos[0], self.pos[1], self.pos[0] + self.size[0], self.pos[1]]
+                        width: 1
+
+                BoxLayout:
+                    orientation: "horizontal"
+                    spacing: "12dp"
                     
-                MDIconButton:
-                    icon: "folder-open"
-                    theme_icon_color: "Custom"
-                    icon_color: app.theme_cls.primary_color
-                    pos_hint: {"center_y": 0.5}
-                    on_release: app.open_folder_picker()
-                    
-            # Scrollable main container
-            ScrollView:
-                do_scroll_x: False
+                    MDIcon:
+                        icon: "folder-sync-outline"
+                        font_size: "30sp"
+                        theme_text_color: "Custom"
+                        text_color: [0, 0.74, 0.83, 1]
+                        size_hint_x: None
+                        width: "30dp"
+                        pos_hint: {"center_y": 0.5}
+                        
+                    BoxLayout:
+                        orientation: "vertical"
+                        pos_hint: {"center_y": 0.5}
+                        
+                        MDLabel:
+                            text: "Smart FileFlow"
+                            font_style: "H6"
+                            bold: True
+                            theme_text_color: "Custom"
+                            text_color: [1, 1, 1, 1]
+                            size_hint_y: None
+                            height: "24dp"
+                            
+                        MDLabel:
+                            text: "Clean, categorize and restore storage"
+                            font_style: "Caption"
+                            theme_text_color: "Custom"
+                            text_color: [1, 1, 1, 0.5]
+                            size_hint_y: None
+                            height: "14dp"
+                            
+                    MDIconButton:
+                        icon: "help-circle-outline"
+                        theme_icon_color: "Custom"
+                        icon_color: [1, 1, 1, 0.6]
+                        pos_hint: {"center_y": 0.5}
+                        on_release: app.show_help()
+
+            # Content Layout
+            BoxLayout:
+                orientation: "vertical"
+                padding: "16dp"
+                spacing: "14dp"
                 
+                # Directory Picker Row
+                BoxLayout:
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: "54dp"
+                    spacing: "8dp"
+                    
+                    MDTextField:
+                        id: dir_input
+                        hint_text: "Select folder to organize"
+                        text: app.target_dir
+                        on_text: app.on_dir_text_change(self.text)
+                        helper_text_mode: "on_error"
+                        pos_hint: {"center_y": 0.5}
+                        line_color_normal: [0.18, 0.22, 0.33, 1]
+                        line_color_focus: [0, 0.74, 0.83, 1]
+                        text_color_normal: [1, 1, 1, 0.8]
+                        text_color_focus: [1, 1, 1, 1]
+                        hint_text_color_normal: [1, 1, 1, 0.4]
+                        hint_text_color_focus: [0, 0.74, 0.83, 0.7]
+                        
+                    MDIconButton:
+                        icon: "folder-open"
+                        theme_icon_color: "Custom"
+                        icon_color: [0, 0.74, 0.83, 1]
+                        pos_hint: {"center_y": 0.5}
+                        on_release: app.open_folder_picker()
+
+                # One-Tap Quick Shortcuts Scrollview
                 BoxLayout:
                     orientation: "vertical"
                     size_hint_y: None
-                    height: self.minimum_height
-                    spacing: "20dp"
-                    padding: ["0dp", "4dp", "0dp", "16dp"]
+                    height: "76dp"
+                    spacing: "4dp"
                     
-                    # Category Statistics Section
-                    BoxLayout:
-                        orientation: "vertical"
+                    MDLabel:
+                        text: "Quick Shortcuts"
+                        font_style: "Caption"
+                        bold: True
+                        theme_text_color: "Custom"
+                        text_color: [1, 1, 1, 0.4]
                         size_hint_y: None
-                        height: self.minimum_height
-                        spacing: "8dp"
+                        height: "16dp"
                         
-                        MDLabel:
-                            text: "Files in Directory"
-                            font_style: "H6"
-                            bold: True
-                            theme_text_color: "Primary"
-                            size_hint_y: None
-                            height: "36dp"
-                            
-                        MDGridLayout:
-                            id: stats_grid
-                            cols: 2
-                            adaptive_height: True
-                            spacing: "12dp"
-                            # Cards will be dynamically updated in python code
-                            
-                    # Preview Changes Section
-                    BoxLayout:
-                        orientation: "vertical"
+                    ScrollView:
+                        do_scroll_y: False
+                        do_scroll_x: True
                         size_hint_y: None
-                        height: self.minimum_height
-                        spacing: "8dp"
+                        height: "54dp"
                         
-                        MDLabel:
-                            text: "Proposed Changes (Dry Run)"
-                            font_style: "H6"
-                            bold: True
-                            theme_text_color: "Primary"
-                            size_hint_y: None
-                            height: "36dp"
+                        BoxLayout:
+                            orientation: "horizontal"
+                            size_hint_x: None
+                            width: self.minimum_width
+                            spacing: "8dp"
+                            padding: ["0dp", "4dp", "0dp", "4dp"]
                             
-                        MDCard:
-                            orientation: "vertical"
-                            radius: [12, 12, 12, 12]
-                            padding: "4dp"
-                            size_hint_y: None
-                            height: "220dp"
-                            elevation: 1
-                            
-                            ScrollView:
-                                do_scroll_x: False
+                            MDRectangleFlatIconButton:
+                                icon: "download"
+                                text: "Downloads"
+                                line_color: [0.18, 0.22, 0.33, 0.8]
+                                text_color: [1, 1, 1, 0.9]
+                                icon_color: [0.13, 0.59, 0.95, 1]
+                                on_release: app.select_quick_folder("Downloads")
                                 
-                                BoxLayout:
-                                    id: preview_list
-                                    orientation: "vertical"
-                                    size_hint_y: None
-                                    height: self.minimum_height
+                            MDRectangleFlatIconButton:
+                                icon: "image"
+                                text: "Pictures"
+                                line_color: [0.18, 0.22, 0.33, 0.8]
+                                text_color: [1, 1, 1, 0.9]
+                                icon_color: [0.91, 0.12, 0.39, 1]
+                                on_release: app.select_quick_folder("Pictures")
+                                
+                            MDRectangleFlatIconButton:
+                                icon: "file-document"
+                                text: "Documents"
+                                line_color: [0.18, 0.22, 0.33, 0.8]
+                                text_color: [1, 1, 1, 0.9]
+                                icon_color: [0.3, 0.69, 0.31, 1]
+                                on_release: app.select_quick_folder("Documents")
+                                
+                            MDRectangleFlatIconButton:
+                                icon: "music"
+                                text: "Music"
+                                line_color: [0.18, 0.22, 0.33, 0.8]
+                                text_color: [1, 1, 1, 0.9]
+                                icon_color: [0.61, 0.15, 0.69, 1]
+                                on_release: app.select_quick_folder("Music")
+
+                # Main Scrollable content (Dashboard Grid & Preview List)
+                ScrollView:
+                    do_scroll_x: False
+                    
+                    BoxLayout:
+                        orientation: "vertical"
+                        size_hint_y: None
+                        height: self.minimum_height
+                        spacing: "16dp"
+                        padding: ["0dp", "4dp", "0dp", "16dp"]
+                        
+                        # Category Statistics Section
+                        BoxLayout:
+                            orientation: "vertical"
+                            size_hint_y: None
+                            height: self.minimum_height
+                            spacing: "8dp"
+                            
+                            MDLabel:
+                                text: "Files in Directory"
+                                font_style: "Subtitle1"
+                                bold: True
+                                theme_text_color: "Custom"
+                                text_color: [1, 1, 1, 0.8]
+                                size_hint_y: None
+                                height: "28dp"
+                                
+                            MDGridLayout:
+                                id: stats_grid
+                                cols: 2
+                                adaptive_height: True
+                                spacing: "10dp"
+                                # Cards are dynamically rendered
+                                
+                        # Preview Changes Section
+                        BoxLayout:
+                            orientation: "vertical"
+                            size_hint_y: None
+                            height: self.minimum_height
+                            spacing: "8dp"
+                            
+                            MDLabel:
+                                text: "Proposed Changes (Dry Run)"
+                                font_style: "Subtitle1"
+                                bold: True
+                                theme_text_color: "Custom"
+                                text_color: [1, 1, 1, 0.8]
+                                size_hint_y: None
+                                height: "28dp"
+                                
+                            MDCard:
+                                orientation: "vertical"
+                                radius: [12, 12, 12, 12]
+                                padding: "1dp"
+                                size_hint_y: None
+                                height: "200dp"
+                                elevation: 1
+                                md_bg_color: [0.11, 0.14, 0.22, 1]
+                                
+                                canvas.before:
+                                    Color:
+                                        rgba: [0.18, 0.22, 0.33, 0.6]
+                                    RoundedRectangle:
+                                        pos: self.pos
+                                        size: self.size
+                                        radius: [12, 12, 12, 12]
+                                    Color:
+                                        rgba: [0.11, 0.14, 0.22, 1]
+                                    RoundedRectangle:
+                                        pos: [self.pos[0] + 1, self.pos[1] + 1]
+                                        size: [self.size[0] - 2, self.size[1] - 2]
+                                        radius: [12, 12, 12, 12]
+                                
+                                ScrollView:
+                                    do_scroll_x: False
                                     
-                                    # If empty, this label will be visible
-                                    MDLabel:
-                                        id: empty_preview_label
-                                        text: "No changes proposed. Select a folder and click SCAN."
-                                        halign: "center"
-                                        valign: "center"
-                                        theme_text_color: "Secondary"
-                                        font_style: "Body2"
+                                    BoxLayout:
+                                        id: preview_list
+                                        orientation: "vertical"
                                         size_hint_y: None
-                                        height: "120dp"
+                                        height: self.minimum_height
+                                        
+                                        MDLabel:
+                                            id: empty_preview_label
+                                            text: "Select a folder and click SCAN to preview changes"
+                                            halign: "center"
+                                            valign: "center"
+                                            theme_text_color: "Custom"
+                                            text_color: [1, 1, 1, 0.4]
+                                            font_style: "Body2"
+                                            size_hint_y: None
+                                            height: "180dp"
 
-
-            # Bottom Button Control Bar
-            BoxLayout:
-                orientation: "horizontal"
-                size_hint_y: None
-                height: "56dp"
-                spacing: "12dp"
-                
-                MDRectangleFlatButton:
-                    id: btn_undo
-                    text: "UNDO LAST"
-                    icon: "undo"
-                    size_hint_x: 0.3
-                    disabled: True
-                    on_release: app.trigger_undo()
+                # Bottom Button Control Bar
+                BoxLayout:
+                    orientation: "horizontal"
+                    size_hint_y: None
+                    height: "50dp"
+                    spacing: "10dp"
                     
-                MDRectangleFlatButton:
-                    id: btn_scan
-                    text: "SCAN"
-                    icon: "magnify"
-                    size_hint_x: 0.3
-                    disabled: True
-                    on_release: app.trigger_scan()
-                    
-                MDRaisedButton:
-                    id: btn_organize
-                    text: "ORGANIZE"
-                    icon: "folder-sync"
-                    size_hint_x: 0.4
-                    disabled: True
-                    on_release: app.trigger_organize()
+                    MDRectangleFlatButton:
+                        id: btn_undo
+                        text: "UNDO LAST"
+                        icon: "undo"
+                        size_hint_x: 0.3
+                        disabled: True
+                        on_release: app.trigger_undo()
+                        line_color: [0.18, 0.22, 0.33, 1]
+                        text_color: [1, 1, 1, 0.8]
+                        
+                    MDRectangleFlatButton:
+                        id: btn_scan
+                        text: "SCAN"
+                        icon: "magnify"
+                        size_hint_x: 0.3
+                        disabled: True
+                        on_release: app.trigger_scan()
+                        line_color: [0.18, 0.22, 0.33, 1]
+                        text_color: [0, 0.74, 0.83, 1]
+                        
+                    MDRaisedButton:
+                        id: btn_organize
+                        text: "ORGANIZE"
+                        icon: "folder-sync"
+                        size_hint_x: 0.4
+                        disabled: True
+                        on_release: app.trigger_organize()
+                        md_bg_color: [0, 0.74, 0.83, 1]
+                        text_color: [1, 1, 1, 1]

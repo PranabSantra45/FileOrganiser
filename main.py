@@ -6,6 +6,7 @@ Config.set('graphics', 'height', '680')
 Config.set('graphics', 'resizable', '0')
 
 from kivy.lang import Builder
+from kivy.uix.screenmanager import FadeTransition
 from kivymd.app import MDApp
 from kivy.properties import StringProperty
 from kivy.clock import Clock
@@ -13,29 +14,69 @@ from ui.dashboard import CategoryCard, FilePreviewItem
 from ui.dialogs import FolderPickerDialog, show_alert_dialog, show_confirm_dialog
 from organizer_engine import OrganizerEngine
 
-# Category styling configuration
+
+# Category styling configuration (vivid accent colors for dark mode)
 CATEGORY_STYLES = {
-    'Images': {'icon': 'image', 'color': [0.12, 0.53, 0.9, 1]},       # Light Blue
-    'Videos': {'icon': 'video', 'color': [0.9, 0.24, 0.24, 1]},       # Red
-    'Documents': {'icon': 'file-document', 'color': [0.1, 0.65, 0.31, 1]}, # Green
-    'Audio': {'icon': 'music', 'color': [0.6, 0.2, 0.8, 1]},          # Purple
-    'Archives': {'icon': 'zip-box', 'color': [0.95, 0.6, 0.1, 1]},    # Orange
-    'Installers': {'icon': 'android', 'color': [0.0, 0.7, 0.7, 1]},   # Teal
-    'Others': {'icon': 'file-question', 'color': [0.45, 0.45, 0.45, 1]} # Grey
+    'Images': {'icon': 'image', 'color': [0.13, 0.59, 0.95, 1]},       # Bright Blue
+    'Videos': {'icon': 'video', 'color': [0.91, 0.12, 0.39, 1]},       # Pinkish Red
+    'Documents': {'icon': 'file-document', 'color': [0.3, 0.69, 0.31, 1]}, # Vivid Green
+    'Audio': {'icon': 'music', 'color': [0.61, 0.15, 0.69, 1]},        # Vibrant Purple
+    'Archives': {'icon': 'zip-box', 'color': [1, 0.6, 0.0, 1]},         # Vivid Orange
+    'Installers': {'icon': 'android', 'color': [0.0, 0.74, 0.83, 1]},   # Neon Cyan
+    'Others': {'icon': 'file-question', 'color': [0.62, 0.62, 0.62, 1]} # Grey
 }
+
+def get_file_icon(filename):
+    _, ext = os.path.splitext(filename.lower())
+    if ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.tiff', '.bmp', '.svg']:
+        return "file-image-outline"
+    elif ext in ['.mp4', '.mkv', '.avi', '.mov', '.flv', '.wmv', '.webm']:
+        return "file-video-outline"
+    elif ext in ['.pdf']:
+        return "file-pdf-box"
+    elif ext in ['.doc', '.docx', '.odt']:
+        return "file-word-box"
+    elif ext in ['.xls', '.xlsx', '.ods']:
+        return "file-excel-box"
+    elif ext in ['.ppt', '.pptx', '.odp']:
+        return "file-powerpoint-box"
+    elif ext in ['.txt', '.rtf', '.csv', '.md']:
+        return "file-document-outline"
+    elif ext in ['.mp3', '.wav', '.flac', '.m4a', '.aac', '.ogg']:
+        return "file-music-outline"
+    elif ext in ['.zip', '.rar', '.tar', '.gz', '.7z', '.bz2']:
+        return "file-zip-box"
+    elif ext in ['.apk']:
+        return "android"
+    else:
+        return "file-outline"
 
 class FileOrganizerApp(MDApp):
     target_dir = StringProperty("")
 
     def build(self):
+        self.title = "Smart FileFlow"
         self.theme_cls.primary_palette = "Indigo"
-        self.theme_cls.theme_style = "Light"
+        self.theme_cls.theme_style = "Dark"
         self.engine = None
         self.folder_picker = FolderPickerDialog(self.on_folder_selected)
         
-        # Load and return the root layout
-        return Builder.load_file('organizer.kv')
+        # Load the ScreenManager layout
+        root = Builder.load_file('organizer.kv')
+        root.transition = FadeTransition(duration=0.6)
+        return root
 
+    def select_quick_folder(self, folder_name):
+        home = os.path.expanduser("~")
+        path = os.path.join(home, folder_name)
+        if os.path.exists(path):
+            self.target_dir = path
+            self.on_dir_text_change(path)
+        else:
+            show_alert_dialog(
+                "Directory Not Found", 
+                f"The folder '{folder_name}' was not found at:\n{path}"
+            )
 
     def on_start(self):
         # Initialize the Category cards with 0 files
@@ -46,6 +87,14 @@ class FileOrganizerApp(MDApp):
         if os.path.exists(downloads_path):
             self.target_dir = downloads_path
             self.on_dir_text_change(downloads_path)
+            
+        # Transition from welcome screen to main screen after 2.5 seconds
+        Clock.schedule_once(self.transition_to_main, 2.5)
+
+    def transition_to_main(self, dt):
+        if self.root:
+            self.root.current = "main_screen"
+
 
     def open_folder_picker(self):
         self.folder_picker.show(self.target_dir)
@@ -133,13 +182,16 @@ class FileOrganizerApp(MDApp):
             filename = os.path.basename(src)
             # Show target path relative to target_dir for cleaner display
             rel_dst = os.path.relpath(dst, self.target_dir)
+            icon = get_file_icon(filename)
             
             item = FilePreviewItem(
                 filename=filename,
                 target_path=rel_dst,
-                index=i
+                index=i,
+                icon_name=icon
             )
             preview_container.add_widget(item)
+
 
 
     def trigger_organize(self):

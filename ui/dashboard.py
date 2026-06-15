@@ -19,4 +19,6 @@ class FilePreviewItem(BoxLayout):
     filename = StringProperty("")
     target_path = StringProperty("")
     index = NumericProperty(0)
+    icon_name = StringProperty("file-outline")
+
 
