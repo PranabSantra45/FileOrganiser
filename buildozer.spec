@@ -51,7 +51,7 @@ android.ndk = 25c
 android.private_storage = True
 
 # (str) Android entry point, default is to use start.py
-android.entrypoint = main.py
+#android.entrypoint = org.kivy.android.PythonActivity
 
 # (list) Pattern to exclude from the data directory
 android.exclude_exts = spec, venv, .venv, log, venv/
