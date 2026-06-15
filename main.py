@@ -1,22 +1,41 @@
 import os
-from kivy.utils import platform
+import sys
 
-# Set window size only on desktop platforms before Kivy graphics load
-if platform != 'android':
-    from kivy.config import Config
-    Config.set('graphics', 'width', '380')
-    Config.set('graphics', 'height', '680')
-    Config.set('graphics', 'resizable', '0')
+def log_early_crash(tb_str):
+    try:
+        # App-specific external files directory requires zero permissions
+        log_dir = "/storage/emulated/0/Android/data/org.pranabsantra.fileflow/files"
+        if not os.path.exists(log_dir):
+            log_dir = os.path.expanduser("~")
+        os.makedirs(log_dir, exist_ok=True)
+        log_path = os.path.join(log_dir, "fileflow_crash.log")
+        with open(log_path, "w", encoding="utf-8") as f:
+            f.write(tb_str)
+    except Exception:
+        pass
 
+try:
+    from kivy.utils import platform
 
-from kivy.lang import Builder
-from kivy.uix.screenmanager import FadeTransition
-from kivymd.app import MDApp
-from kivy.properties import StringProperty
-from kivy.clock import Clock
-from ui.dashboard import CategoryCard, FilePreviewItem
-from ui.dialogs import FolderPickerDialog, show_alert_dialog, show_confirm_dialog
-from organizer_engine import OrganizerEngine
+    # Set window size only on desktop platforms before Kivy graphics load
+    if platform != 'android':
+        from kivy.config import Config
+        Config.set('graphics', 'width', '380')
+        Config.set('graphics', 'height', '680')
+        Config.set('graphics', 'resizable', '0')
+
+    from kivy.lang import Builder
+    from kivy.uix.screenmanager import FadeTransition
+    from kivymd.app import MDApp
+    from kivy.properties import StringProperty
+    from kivy.clock import Clock
+    from ui.dashboard import CategoryCard, FilePreviewItem
+    from ui.dialogs import FolderPickerDialog, show_alert_dialog, show_confirm_dialog
+    from organizer_engine import OrganizerEngine
+except Exception as e:
+    import traceback
+    log_early_crash(traceback.format_exc())
+    raise e
 
 
 # Category styling configuration (vivid accent colors for dark mode)
@@ -358,19 +377,6 @@ if __name__ == '__main__':
         import traceback
         tb_str = traceback.format_exc()
         print("CRITICAL LAUNCH ERROR:\n", tb_str)
-        
-        # Save traceback to app-specific external storage (requires NO permissions on Android)
-        try:
-            if platform == 'android':
-                log_dir = "/storage/emulated/0/Android/data/org.pranabsantra.fileflow/files"
-            else:
-                log_dir = os.path.expanduser("~")
-            os.makedirs(log_dir, exist_ok=True)
-            log_path = os.path.join(log_dir, "fileflow_crash.log")
-            with open(log_path, "w", encoding="utf-8") as f:
-                f.write(tb_str)
-        except Exception:
-            pass
-            
+        log_early_crash(tb_str)
         raise e
 
