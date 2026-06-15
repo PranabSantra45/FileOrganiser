@@ -63,7 +63,7 @@ class FileOrganizerApp(MDApp):
         self.theme_cls.primary_palette = "Indigo"
         self.theme_cls.theme_style = "Dark"
         self.engine = None
-        self.folder_picker = FolderPickerDialog(self.on_folder_selected)
+        self.folder_picker = None
         
         # Load the ScreenManager layout
         root = Builder.load_file('organizer.kv')
@@ -157,6 +157,9 @@ class FileOrganizerApp(MDApp):
         )
 
     def open_folder_picker(self):
+        if not self.folder_picker:
+            self.folder_picker = FolderPickerDialog(self.on_folder_selected)
+            
         if platform == 'android':
             start_path = "/storage/emulated/0"
         else:
@@ -356,18 +359,15 @@ if __name__ == '__main__':
         tb_str = traceback.format_exc()
         print("CRITICAL LAUNCH ERROR:\n", tb_str)
         
-        # Save traceback to private internal storage
+        # Save traceback to app-specific external storage (requires NO permissions on Android)
         try:
-            private_path = os.path.join(os.path.expanduser("~"), "fileflow_crash.log")
-            with open(private_path, "w", encoding="utf-8") as f:
-                f.write(tb_str)
-        except Exception:
-            pass
-            
-        # Save traceback to public downloads directory (if permissions exist)
-        try:
-            public_path = "/storage/emulated/0/Download/fileflow_crash.log"
-            with open(public_path, "w", encoding="utf-8") as f:
+            if platform == 'android':
+                log_dir = "/storage/emulated/0/Android/data/org.pranabsantra.fileflow/files"
+            else:
+                log_dir = os.path.expanduser("~")
+            os.makedirs(log_dir, exist_ok=True)
+            log_path = os.path.join(log_dir, "fileflow_crash.log")
+            with open(log_path, "w", encoding="utf-8") as f:
                 f.write(tb_str)
         except Exception:
             pass
