@@ -2,7 +2,7 @@
 
 A clean, responsive cross-platform desktop application built using Python, Kivy, and KivyMD, designed with a mobile Android Material Design interface. It scans a target folder, categorizes files by their extensions, and moves them to organized subdirectories. It also features a dry-run preview mode and an undo function to revert file operations.
 
-## 🚀 Features
+## Features
 
 - **Extension Scanning**: Categorizes files into standard groups: `Images`, `Videos`, `Documents`, `Audio`, `Archives`, `Installers`, and `Others`.
 - **Stats Dashboard**: Colored Material cards showing the file counts per category.
@@ -13,7 +13,7 @@ A clean, responsive cross-platform desktop application built using Python, Kivy,
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```
 File Organizer/
