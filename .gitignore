@@ -1,0 +1,23 @@
+# Virtual Environment
+file organiser venv/
+venv/
+.venv/
+env/
+
+# Python Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Project specific ignores
+test_files/
+.organiser_history.json
+
+# IDEs and Editors
+.vscode/
+.idea/
+
+# Kivy logs and temporary directories
+.kivy/
+*.log
