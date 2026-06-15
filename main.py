@@ -1,9 +1,13 @@
 import os
-from kivy.config import Config
-# Set window size before importing other Kivy modules
-Config.set('graphics', 'width', '380')
-Config.set('graphics', 'height', '680')
-Config.set('graphics', 'resizable', '0')
+from kivy.utils import platform
+
+# Set window size only on desktop platforms before Kivy graphics load
+if platform != 'android':
+    from kivy.config import Config
+    Config.set('graphics', 'width', '380')
+    Config.set('graphics', 'height', '680')
+    Config.set('graphics', 'resizable', '0')
+
 
 from kivy.lang import Builder
 from kivy.uix.screenmanager import FadeTransition
@@ -67,8 +71,19 @@ class FileOrganizerApp(MDApp):
         return root
 
     def select_quick_folder(self, folder_name):
-        home = os.path.expanduser("~")
-        path = os.path.join(home, folder_name)
+        if platform == 'android':
+            # Map shortcuts to Android external storage directory paths
+            android_folders = {
+                'Downloads': '/storage/emulated/0/Download',
+                'Pictures': '/storage/emulated/0/Pictures',
+                'Documents': '/storage/emulated/0/Documents',
+                'Music': '/storage/emulated/0/Music'
+            }
+            path = android_folders.get(folder_name, os.path.join('/storage/emulated/0', folder_name))
+        else:
+            home = os.path.expanduser("~")
+            path = os.path.join(home, folder_name)
+            
         if os.path.exists(path):
             self.target_dir = path
             self.on_dir_text_change(path)
@@ -82,11 +97,16 @@ class FileOrganizerApp(MDApp):
         # Initialize the Category cards with 0 files
         self.update_stats_ui({})
         
-        # Propose default directory (Downloads folder)
-        downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
-        if os.path.exists(downloads_path):
+        # Propose default directory
+        if platform == 'android':
+            downloads_path = "/storage/emulated/0/Download"
             self.target_dir = downloads_path
-            self.on_dir_text_change(downloads_path)
+            # We don't call on_dir_text_change yet as permissions aren't granted
+        else:
+            downloads_path = os.path.join(os.path.expanduser("~"), "Downloads")
+            if os.path.exists(downloads_path):
+                self.target_dir = downloads_path
+                self.on_dir_text_change(downloads_path)
             
         # Transition from welcome screen to main screen after 2.5 seconds
         Clock.schedule_once(self.transition_to_main, 2.5)
@@ -94,7 +114,61 @@ class FileOrganizerApp(MDApp):
     def transition_to_main(self, dt):
         if self.root:
             self.root.current = "main_screen"
+            
+        # Request storage permissions once the main dashboard is loaded on Android
+        if platform == 'android':
+            Clock.schedule_once(self.request_android_permissions, 0.5)
 
+    def request_android_permissions(self, dt):
+        try:
+            from android.permissions import request_permissions, Permission
+            # Request regular storage permissions (Android 10 and below)
+            request_permissions([
+                Permission.READ_EXTERNAL_STORAGE,
+                Permission.WRITE_EXTERNAL_STORAGE
+            ])
+            
+            # Check for All Files Access (Android 11+ / API 30+)
+            from jnius import autoclass
+            Environment = autoclass('android.os.Environment')
+            
+            # If manager check is available and not granted, prompt the user
+            if hasattr(Environment, 'isExternalStorageManager') and not Environment.isExternalStorageManager():
+                self.prompt_manage_storage_permission()
+            else:
+                # If permissions are already granted, run validation on default directory
+                self.on_dir_text_change(self.target_dir)
+        except Exception as e:
+            print(f"Error checking permissions: {e}")
+
+    def prompt_manage_storage_permission(self):
+        def open_settings():
+            try:
+                from jnius import autoclass
+                Intent = autoclass('android.content.Intent')
+                Settings = autoclass('android.provider.Settings')
+                Uri = autoclass('android.net.Uri')
+                activity = autoclass('org.kivy.android.PythonActivity').mActivity
+                
+                intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+                uri = Uri.fromParts("package", activity.getPackageName(), None)
+                intent.setData(uri)
+                activity.startActivity(intent)
+                
+                # Check target dir status after user returns from settings screen
+                Clock.schedule_once(lambda dt: self.on_dir_text_change(self.target_dir), 3.0)
+            except Exception as e:
+                show_alert_dialog("Permission Error", f"Could not open settings: {e}")
+                
+        show_confirm_dialog(
+            title="Storage Permission Required",
+            text=(
+                "Smart FileFlow needs 'All Files Access' permission to scan and organize "
+                "your Downloads folder on Android 11+.\n\n"
+                "Click CONFIRM to open system settings and enable it."
+            ),
+            on_confirm=open_settings
+        )
 
     def open_folder_picker(self):
         self.folder_picker.show(self.target_dir)
@@ -104,6 +178,10 @@ class FileOrganizerApp(MDApp):
         self.on_dir_text_change(path)
 
     def on_dir_text_change(self, text):
+        # Safety Guard: Skip UI updates if self.root is not yet fully loaded
+        if not self.root or not hasattr(self.root, 'ids') or 'dir_input' not in self.root.ids:
+            return
+            
         # Enable or disable buttons based on text path validity
         if os.path.exists(text) and os.path.isdir(text):
             self.root.ids.dir_input.error = False
@@ -121,6 +199,7 @@ class FileOrganizerApp(MDApp):
             self.root.ids.btn_organize.disabled = True
             self.root.ids.btn_undo.disabled = True
             self.engine = None
+
 
     def trigger_scan(self):
         if not self.engine:
