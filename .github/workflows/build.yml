@@ -8,21 +8,74 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
-      - name: Build Android APK with Buildozer
-        uses: ArtemSBulgakov/buildozer-action@v1
-        id: buildozer
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
         with:
-          command: buildozer android debug
-          buildozer_version: stable
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Install System Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            git \
+            ffmpeg \
+            libsdl2-dev \
+            libsdl2-image-dev \
+            libsdl2-mixer-dev \
+            libsdl2-ttf-dev \
+            libportmidi-dev \
+            libswscale-dev \
+            libavformat-dev \
+            libavcodec-dev \
+            zlib1g-dev \
+            libgstreamer1.0-dev \
+            gstreamer1.0-plugins-base \
+            gstreamer1.0-plugins-good \
+            libsqlite3-dev \
+            sqlite3 \
+            bzip2 \
+            libbz2-dev \
+            liblzma-dev \
+            libreadline-dev \
+            libncursesw5-dev \
+            libssl-dev \
+            libgdbm-dev \
+            libdb-dev \
+            uuid-dev \
+            libffi-dev \
+            libgmp-dev \
+            libmpfr-dev \
+            libmpc-dev \
+            unzip \
+            zip \
+            autoconf \
+            libtool \
+            pkg-config
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python Dependencies
+        run: |
+          pip install --upgrade pip
+          pip install Cython==0.29.33 virtualenv buildozer
+
+      - name: Build Android APK
+        run: |
+          yes | buildozer android debug
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Smart-FileFlow-v1.0.0-debug
-          path: ${{ steps.buildozer.outputs.filename }}
+          path: bin/*.apk
